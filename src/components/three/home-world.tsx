@@ -1,16 +1,16 @@
 "use client";
 
 import { useRef, useMemo } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
-import {
-  Float,
-  Grid,
-  MeshDistortMaterial,
-  Sparkles,
-  Stars,
-} from "@react-three/drei";
-import { MathUtils, type Group, type Mesh } from "three";
+import { useFrame } from "@react-three/fiber";
+import { Grid, Stars } from "@react-three/drei";
+import type { Group } from "three";
+import { EnergyCore } from "./energy-core";
+import { ConnectionBeams } from "./connection-beams";
+import { MouseOrb } from "./mouse-orb";
+import { OrbitalRingSystem } from "./orbital-rings";
+import { IntroCameraRig } from "./intro-camera";
 import { FloatingNode } from "./floating-node";
+import { NebulaBackground } from "./nebula-background";
 import type { AppId } from "@/types";
 
 const DESKTOP_APPS: { id: AppId; label: string; angle: number; radius: number }[] = [
@@ -22,6 +22,8 @@ const DESKTOP_APPS: { id: AppId; label: string; angle: number; radius: number }[
   { id: "arcade", label: "Arcade", angle: (5 * Math.PI) / 4, radius: 3.2 },
   { id: "about", label: "About", angle: (3 * Math.PI) / 2, radius: 3.2 },
   { id: "contact", label: "Contact", angle: (7 * Math.PI) / 4, radius: 3.2 },
+  { id: "gallery", label: "Gallery", angle: 0.2, radius: 4.0 },
+  { id: "music", label: "Music", angle: Math.PI + 0.2, radius: 4.0 },
 ];
 
 interface HomeWorldProps {
@@ -29,124 +31,80 @@ interface HomeWorldProps {
   mouse: { x: number; y: number };
 }
 
-function CoreSphere() {
-  const meshRef = useRef<Mesh>(null);
-  const glowRef = useRef<Mesh>(null);
-
-  useFrame((state) => {
-    if (!meshRef.current || !glowRef.current) return;
-    const t = state.clock.elapsedTime;
-    meshRef.current.rotation.x = t * 0.08 + 0.2;
-    meshRef.current.rotation.y = t * 0.12 + 0.35;
-    glowRef.current.rotation.x = t * 0.04;
-    glowRef.current.rotation.y = -t * 0.06;
-  });
-
-  return (
-    <Float speed={1.1} rotationIntensity={0.28} floatIntensity={0.24}>
-      <mesh ref={meshRef}>
-        <icosahedronGeometry args={[1.1, 2]} />
-        <MeshDistortMaterial
-          color="#2563eb"
-          emissive="#7c3aed"
-          emissiveIntensity={0.25}
-          roughness={0.1}
-          metalness={0.6}
-          distort={0.28}
-          speed={1.8}
-          transparent
-          opacity={0.92}
-        />
-      </mesh>
-      <mesh ref={glowRef}>
-        <torusGeometry args={[1.55, 0.04, 16, 100]} />
-        <meshStandardMaterial
-          color="#0891b2"
-          emissive="#0891b2"
-          emissiveIntensity={0.7}
-          transparent
-          opacity={0.8}
-        />
-      </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1.9, 0.028, 16, 100]} />
-        <meshStandardMaterial
-          color="#7c3aed"
-          emissive="#7c3aed"
-          emissiveIntensity={0.42}
-          transparent
-          opacity={0.6}
-        />
-      </mesh>
-    </Float>
-  );
-}
-
-function CameraRig({ mouse }: { mouse: { x: number; y: number } }) {
-  const { camera } = useThree();
-
-  useFrame((state, delta) => {
-    const targetX = mouse.x * 1.35;
-    const targetY = mouse.y * 0.7 + 1.9;
-    const parallax = Math.sin(state.clock.elapsedTime * 0.4) * 0.08;
-
-    camera.position.x = MathUtils.damp(camera.position.x, targetX + parallax, 2.6, delta);
-    camera.position.y = MathUtils.damp(camera.position.y, targetY + Math.sin(state.clock.elapsedTime * 0.25) * 0.04, 2.6, delta);
-    camera.position.z = MathUtils.damp(camera.position.z, 6.2 + Math.abs(mouse.x) * 0.15, 2.4, delta);
-    camera.lookAt(0, 0.18, 0);
-  });
-
-  return null;
-}
-
 export function HomeWorld({ onOpenApp, mouse }: HomeWorldProps) {
   const nodesRef = useRef<Group>(null);
 
-  const nodeElements = useMemo(
+  const nodeData = useMemo(
     () =>
       DESKTOP_APPS.map((app, index) => {
         const angle = app.angle + (index % 2 === 0 ? 0.16 : -0.16);
         const radius = app.radius + (index % 2 === 0 ? 0.18 : -0.12);
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
-        const y = Math.sin(index * 0.85 + 0.4) * 0.48 + (index % 2 === 0 ? 0.16 : -0.14);
+        const y =
+          Math.sin(index * 0.85 + 0.4) * 0.48 +
+          (index % 2 === 0 ? 0.16 : -0.14);
 
-        return (
-          <FloatingNode
-            key={app.id}
-            appId={app.id}
-            label={app.label}
-            position={[x, y, z]}
-            onSelect={onOpenApp}
-            index={index}
-          />
-        );
+        return { ...app, position: [x, y, z] as [number, number, number] };
       }),
-    [onOpenApp]
+    []
+  );
+
+  const nodeElements = useMemo(
+    () =>
+      nodeData.map((node, index) => (
+        <FloatingNode
+          key={node.id}
+          appId={node.id}
+          label={node.label}
+          position={node.position}
+          onSelect={onOpenApp}
+          index={index}
+        />
+      )),
+    [nodeData, onOpenApp]
   );
 
   useFrame((state) => {
     if (!nodesRef.current) return;
     nodesRef.current.rotation.y = state.clock.elapsedTime * 0.025;
-    nodesRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.18) * 0.015;
+    nodesRef.current.rotation.x =
+      Math.sin(state.clock.elapsedTime * 0.18) * 0.015;
   });
 
   return (
     <>
-      <color attach="background" args={["#eef2f7"]} />
-      <fog attach="fog" args={["#eef2f7", 8, 22]} />
+      <color attach="background" args={["#0f0a1e"]} />
+      <fog attach="fog" args={["#0f0a1e", 8, 25]} />
 
-      <ambientLight intensity={0.9} />
-      <directionalLight position={[5, 8, 5]} intensity={1.35} color="#ffffff" />
-      <directionalLight position={[-4, 3, -2]} intensity={0.65} color="#c4b5fd" />
-      <pointLight position={[0, 2, 0]} intensity={1.2} color="#2563eb" />
-      <pointLight position={[2.5, 1.5, 3]} intensity={0.7} color="#38bdf8" />
+      <NebulaBackground />
 
-      <CameraRig mouse={mouse} />
+      <ambientLight intensity={0.35} />
+      <directionalLight position={[4, 6, 4]} intensity={0.6} color="#f8fafc" />
+      <directionalLight
+        position={[-3, 2, -2]}
+        intensity={0.25}
+        color="#64748b"
+      />
+      <pointLight position={[0, 0, 0]} intensity={1.2} color="#2563eb" distance={8} decay={2} />
+      <pointLight position={[0, 0, 0]} intensity={0.6} color="#7c3aed" distance={6} decay={2} />
 
-      <CoreSphere />
+      <IntroCameraRig mouse={mouse} />
+
+      <EnergyCore />
+
+      <OrbitalRingSystem />
+
+      <ConnectionBeams
+        nodePositions={nodeData.map((n) => ({
+          appId: n.id,
+          position: n.position,
+        }))}
+      />
 
       <group ref={nodesRef}>{nodeElements}</group>
+
+      <MouseOrb />
 
       <Grid
         position={[0, -2.2, 0]}
@@ -162,19 +120,10 @@ export function HomeWorld({ onOpenApp, mouse }: HomeWorldProps) {
         infiniteGrid
       />
 
-      <Sparkles
-        count={120}
-        scale={[14, 8, 14]}
-        size={2.5}
-        speed={0.35}
-        opacity={0.45}
-        color="#2563eb"
-      />
-
       <Stars
         radius={30}
         depth={20}
-        count={1200}
+        count={1500}
         factor={2}
         saturation={0.2}
         fade

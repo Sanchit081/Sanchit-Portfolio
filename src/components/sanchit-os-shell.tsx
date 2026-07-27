@@ -43,6 +43,7 @@ import {
 import { HomeScene } from "@/components/three/home-scene";
 import { useKonamiCode } from "@/hooks/use-konami-code";
 import { SnakeGame } from "@/games/snake";
+import { PongGame } from "@/games/pong";
 import { apps } from "@/lib/apps";
 import { aiKnowledgeBase, blogPosts, experiences, profile, projects, skills } from "@/content/portfolio";
 import { cn, clamp, generateId } from "@/lib/utils";
@@ -85,6 +86,7 @@ const TERMINAL_SUGGESTIONS = [
   "neofetch",
   "sudo hire sanchit",
   "cat story.txt",
+  "pong",
 ];
 
 const TERMINAL_THEME_LABELS = {
@@ -713,6 +715,10 @@ function WindowContent({ appId }: { appId: AppId }) {
       return <BlogApp />;
     case "github":
       return <GithubApp />;
+    case "gallery":
+      return <GalleryApp />;
+    case "music":
+      return <MusicApp />;
     case "resume":
       return <ResumeApp />;
     default:
@@ -1335,13 +1341,24 @@ function ArcadeApp() {
 
   return (
     <div className="grid gap-4 p-5 lg:grid-cols-[1fr_0.9fr]">
-      <div className="rounded-[28px] border border-panel-border bg-background-secondary/50 p-5">
-        <div className="font-heading text-2xl font-semibold">Snake</div>
-        <div className="mt-2 text-sm text-muted">
-          Fully playable with keyboard and touch controls.
+      <div className="space-y-4">
+        <div className="rounded-[28px] border border-panel-border bg-background-secondary/50 p-5">
+          <div className="font-heading text-xl font-semibold">Snake</div>
+          <div className="mt-2 text-sm text-muted">
+            Fully playable with keyboard and touch controls.
+          </div>
+          <div className="mt-5">
+            <SnakeGame />
+          </div>
         </div>
-        <div className="mt-5">
-          <SnakeGame />
+        <div className="rounded-[28px] border border-panel-border bg-background-secondary/50 p-5">
+          <div className="font-heading text-xl font-semibold">Pong</div>
+          <div className="mt-2 text-sm text-muted">
+            Classic arcade game against the AI. First to 5 wins.
+          </div>
+          <div className="mt-5">
+            <PongGame />
+          </div>
         </div>
       </div>
       <div className="rounded-[28px] border border-panel-border bg-background-secondary0 p-5">
@@ -1448,6 +1465,252 @@ function ResumeApp() {
       <div className="rounded-[28px] border border-dashed border-panel-border bg-background-secondary/50 p-5">
         <div className="flex h-full min-h-72 items-center justify-center rounded-[22px] border border-panel-border bg-background-secondary/30 text-sm text-muted">
           Embedded viewer placeholder ready for PDF or MDX timeline content.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GalleryApp() {
+  return (
+    <div className="space-y-4 p-5">
+      <div className="rounded-[28px] border border-panel-border bg-[linear-gradient(135deg,rgba(79,156,249,0.16),rgba(124,92,252,0.05))] p-5">
+        <div className="font-heading text-2xl font-semibold">Visual Showcase</div>
+        <p className="mt-3 text-sm leading-7 text-muted">
+          A curated collection of projects and design work.
+        </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {projects.map((project) => (
+          <div
+            key={project.id}
+            className="group rounded-[28px] border border-panel-border bg-background-secondary/50 overflow-hidden transition hover:border-accent-blue/30"
+          >
+            <div
+              className="aspect-video bg-cover bg-center"
+              style={{
+                backgroundImage: `linear-gradient(135deg, ${
+                  project.tags[0] === "Next.js"
+                    ? "rgba(37,99,235,0.3)"
+                    : project.tags[0] === "Node.js"
+                      ? "rgba(56,189,248,0.3)"
+                      : project.tags[0] === "React"
+                        ? "rgba(124,92,252,0.3)"
+                        : "rgba(79,156,249,0.3)"
+                }, ${
+                  project.tags[0] === "Next.js"
+                    ? "rgba(124,92,252,0.1)"
+                    : project.tags[0] === "Node.js"
+                      ? "rgba(37,99,235,0.1)"
+                      : project.tags[0] === "React"
+                        ? "rgba(56,189,248,0.1)"
+                        : "rgba(124,92,252,0.1)"
+                })`,
+              }}
+            >
+              <div className="flex h-full items-end p-4">
+                <div className="flex gap-2">
+                  {project.tags.slice(0, 2).map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-white/20 backdrop-blur-sm px-2.5 py-1 text-xs font-medium text-white"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="font-heading text-lg font-semibold">{project.title}</div>
+              <p className="mt-2 line-clamp-2 text-sm text-muted">{project.description}</p>
+              <div className="mt-3 flex items-center gap-2 text-xs text-muted">
+                <span>{project.year}</span>
+                {project.github && (
+                  <span className="rounded-full border border-panel-border px-2 py-0.5">GitHub</span>
+                )}
+                {project.demo && (
+                  <span className="rounded-full border border-panel-border px-2 py-0.5">Demo</span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MusicApp() {
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(0.3);
+  const [waveType, setWaveType] = useState<OscillatorType>("sine");
+  const [notes, setNotes] = useState<string[]>([]);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const oscillatorRef = useRef<OscillatorNode | null>(null);
+
+  const startMusic = useCallback(() => {
+    if (audioContextRef.current) return;
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    audioContextRef.current = ctx;
+
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = volume;
+    gainNode.connect(ctx.destination);
+    gainNodeRef.current = gainNode;
+
+    const masterFilter = ctx.createBiquadFilter();
+    masterFilter.type = "lowpass";
+    masterFilter.frequency.value = 2000;
+    masterFilter.Q.value = 2;
+    masterFilter.connect(gainNode);
+
+    const oscillator = ctx.createOscillator();
+    oscillator.type = waveType;
+    oscillator.frequency.value = 220;
+    oscillator.connect(masterFilter);
+    oscillator.start();
+    oscillatorRef.current = oscillator;
+
+    setIsPlaying(true);
+  }, [volume, waveType]);
+
+  const stopMusic = useCallback(() => {
+    if (oscillatorRef.current) {
+      oscillatorRef.current.stop();
+      oscillatorRef.current.disconnect();
+      oscillatorRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    gainNodeRef.current = null;
+    setIsPlaying(false);
+    setNotes([]);
+  }, []);
+
+  const playNote = useCallback(
+    (freq: number, name: string) => {
+      if (!audioContextRef.current) startMusic();
+      const ctx = audioContextRef.current!;
+      if (ctx.state === "suspended") ctx.resume();
+
+      const osc = ctx.createOscillator();
+      osc.type = waveType;
+      osc.frequency.value = freq;
+
+      const noteGain = ctx.createGain();
+      noteGain.gain.value = 0.15;
+      noteGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2);
+
+      osc.connect(noteGain);
+      noteGain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 2);
+
+      setNotes((prev) => [...prev.slice(-5), `${name} (${freq}Hz)`]);
+    },
+    [startMusic, waveType]
+  );
+
+  const noteMap = [
+    { name: "C4", freq: 261.63 },
+    { name: "E4", freq: 329.63 },
+    { name: "G4", freq: 392.0 },
+    { name: "C5", freq: 523.25 },
+    { name: "E5", freq: 659.25 },
+    { name: "G5", freq: 783.99 },
+  ];
+
+  return (
+    <div className="flex h-full flex-col p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="font-heading text-2xl font-semibold">Ambient Player</div>
+          <p className="mt-1 text-sm text-muted">Generative soundscape with Web Audio</p>
+        </div>
+        <button
+          className={cn(
+            "rounded-full px-5 py-2.5 text-sm font-medium transition",
+            isPlaying
+              ? "border border-panel-border bg-white/80 text-foreground"
+              : "bg-accent-blue text-white shadow-soft hover:bg-[#1d4ed8]"
+          )}
+          onClick={isPlaying ? stopMusic : startMusic}
+        >
+          {isPlaying ? "Stop" : "Play"}
+        </button>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.8fr]">
+        <div className="rounded-[28px] border border-panel-border bg-background-secondary/50 p-5">
+          <div className="font-heading text-lg font-semibold">Controls</div>
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="text-sm text-muted">Wave Type</label>
+              <div className="mt-2 flex gap-2">
+                {(["sine", "triangle", "sawtooth", "square"] as OscillatorType[]).map((type) => (
+                  <button
+                    key={type}
+                    className={cn(
+                      "rounded-xl border px-3 py-1.5 text-xs uppercase tracking-wider transition",
+                      waveType === type
+                        ? "border-accent-blue bg-accent-blue/10 text-accent-blue"
+                        : "border-panel-border bg-white/70 text-muted hover:bg-white"
+                    )}
+                    onClick={() => setWaveType(type)}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm text-muted">Volume: {Math.round(volume * 100)}%</label>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={volume}
+                onChange={(e) => setVolume(Number(e.target.value))}
+                className="mt-2 w-full accent-accent-blue"
+                onInput={(e) => {
+                  if (gainNodeRef.current) {
+                    gainNodeRef.current.gain.value = Number((e.target as HTMLInputElement).value);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-[28px] border border-panel-border bg-background-secondary/50 p-5">
+          <div className="font-heading text-lg font-semibold">Chord Pad</div>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            {noteMap.map((note) => (
+              <button
+                key={note.name}
+                className={cn(
+                  "rounded-xl border border-panel-border bg-white/70 py-3 text-sm font-medium text-foreground transition hover:bg-white",
+                  isPlaying && "animate-pulse"
+                )}
+                onClick={() => playNote(note.freq, note.name)}
+              >
+                {note.name}
+              </button>
+            ))}
+          </div>
+          {notes.length > 0 && (
+            <div className="mt-4 space-y-1">
+              <div className="text-xs text-muted">Recent:</div>
+              {notes.map((note, i) => (
+                <div key={i} className="text-xs font-mono text-muted">{note}</div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
