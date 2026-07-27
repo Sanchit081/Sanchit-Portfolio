@@ -2,6 +2,97 @@ import { shaderMaterial } from "@react-three/drei";
 import { extend } from "@react-three/fiber";
 import * as THREE from "three";
 
+const ParticleMaterial = shaderMaterial(
+  {
+    uTime: 0,
+    uColor: new THREE.Color("#2563eb"),
+    uSize: 1.0,
+    uPixelRatio: 1,
+  },
+  /* glsl */ `
+    attribute float aScale;
+    attribute vec3 aRandomness;
+    varying vec3 vColor;
+    varying float vAlpha;
+
+    void main() {
+      vec4 modelPosition = modelMatrix * vec4(position, 1.0);
+      
+      vec4 viewPosition = viewMatrix * modelPosition;
+      vec4 projectedPosition = projectionMatrix * viewPosition;
+      
+      gl_Position = projectedPosition;
+      
+      gl_PointSize = uSize * aScale * uPixelRatio;
+      gl_PointSize *= (1.0 / -viewPosition.z);
+      
+      vColor = uColor;
+      vAlpha = aScale;
+    }
+  `,
+  /* glsl */ `
+    uniform float uTime;
+    uniform vec3 uColor;
+    varying vec3 vColor;
+    varying float vAlpha;
+
+    void main() {
+      float distanceToCenter = distance(gl_PointCoord, vec2(0.5));
+      float strength = 0.05 / distanceToCenter - 0.1;
+      
+      float twinkle = sin(uTime * 3.0 + gl_FragCoord.x * 0.1) * 0.5 + 0.5;
+      
+      vec3 finalColor = vColor * (1.0 + twinkle * 0.3);
+      float alpha = strength * vAlpha * (0.8 + twinkle * 0.2);
+      
+      gl_FragColor = vec4(finalColor, alpha);
+    }
+  `
+);
+
+const TrailMaterial = shaderMaterial(
+  {
+    uTime: 0,
+    uColor: new THREE.Color("#7c3aed"),
+  },
+  /* glsl */ `
+    attribute float aLife;
+    attribute float aSize;
+    varying float vLife;
+    varying float vSize;
+
+    void main() {
+      vLife = aLife;
+      vSize = aSize;
+      
+      vec4 modelPosition = modelMatrix * vec4(position, 1.0);
+      vec4 viewPosition = viewMatrix * modelPosition;
+      vec4 projectedPosition = projectionMatrix * viewPosition;
+      
+      gl_Position = projectedPosition;
+      gl_PointSize = aSize * (200.0 / -viewPosition.z);
+    }
+  `,
+  /* glsl */ `
+    uniform float uTime;
+    uniform vec3 uColor;
+    varying float vLife;
+    varying float vSize;
+
+    void main() {
+      float distanceToCenter = distance(gl_PointCoord, vec2(0.5));
+      float strength = 0.05 / distanceToCenter - 0.1;
+      
+      float fade = smoothstep(0.0, 0.2, vLife) * smoothstep(1.0, 0.8, vLife);
+      
+      vec3 finalColor = uColor + vec3(0.2) * sin(uTime * 2.0);
+      float alpha = strength * fade;
+      
+      gl_FragColor = vec4(finalColor, alpha);
+    }
+  `
+);
+
 const HolographicMaterial = shaderMaterial(
   {
     uTime: 0,
@@ -95,10 +186,20 @@ const AuroraMaterial = shaderMaterial(
   `
 );
 
-extend({ HolographicMaterial, AuroraMaterial });
+extend({ ParticleMaterial, TrailMaterial, HolographicMaterial, AuroraMaterial });
 
 declare module "@react-three/fiber" {
   interface ThreeElements {
+    particleMaterial: THREE.ShaderMaterial & {
+      uTime: number;
+      uColor: THREE.Color;
+      uSize: number;
+      uPixelRatio: number;
+    };
+    trailMaterial: THREE.ShaderMaterial & {
+      uTime: number;
+      uColor: THREE.Color;
+    };
     holographicMaterial: THREE.ShaderMaterial & {
       uTime: number;
       uColor: THREE.Color;
@@ -114,4 +215,4 @@ declare module "@react-three/fiber" {
   }
 }
 
-export { HolographicMaterial, AuroraMaterial };
+export { ParticleMaterial, TrailMaterial, HolographicMaterial, AuroraMaterial };

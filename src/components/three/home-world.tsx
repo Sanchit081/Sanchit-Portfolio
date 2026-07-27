@@ -74,26 +74,16 @@ export function HomeWorld({ onOpenApp, mouse }: HomeWorldProps) {
 
   return (
     <>
-      <color attach="background" args={["#0f0a1e"]} />
-      <fog attach="fog" args={["#0f0a1e", 8, 25]} />
+      <color attach="background" args={["#02030a"]} />
+      <fog attach="fog" args={["#02030a", 10, 22]} />
 
-      <NebulaBackground />
-
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[4, 6, 4]} intensity={0.6} color="#f8fafc" />
-      <directionalLight
-        position={[-3, 2, -2]}
-        intensity={0.25}
-        color="#64748b"
-      />
-      <pointLight position={[0, 0, 0]} intensity={1.2} color="#2563eb" distance={8} decay={2} />
-      <pointLight position={[0, 0, 0]} intensity={0.6} color="#7c3aed" distance={6} decay={2} />
+      <ambientLight intensity={0.12} />
+      <directionalLight position={[4, 6, 4]} intensity={0.16} color="#f8fafc" />
+      <pointLight position={[0, 0, 0]} intensity={0.2} color="#60a5fa" distance={5} decay={2} />
 
       <IntroCameraRig mouse={mouse} />
 
       <EnergyCore />
-
-      <OrbitalRingSystem />
 
       <ConnectionBeams
         nodePositions={nodeData.map((n) => ({
@@ -109,25 +99,15 @@ export function HomeWorld({ onOpenApp, mouse }: HomeWorldProps) {
       <Grid
         position={[0, -2.2, 0]}
         args={[20, 20]}
-        cellSize={0.5}
-        cellThickness={0.4}
-        cellColor="#cbd5e1"
-        sectionSize={2}
-        sectionThickness={0.8}
-        sectionColor="#94a3b8"
-        fadeDistance={18}
-        fadeStrength={1.2}
+        cellSize={0.8}
+        cellThickness={0.18}
+        cellColor="#1f2937"
+        sectionSize={4}
+        sectionThickness={0.25}
+        sectionColor="#374151"
+        fadeDistance={14}
+        fadeStrength={0.7}
         infiniteGrid
-      />
-
-      <Stars
-        radius={30}
-        depth={20}
-        count={1500}
-        factor={2}
-        saturation={0.2}
-        fade
-        speed={0.4}
       />
     </>
   );

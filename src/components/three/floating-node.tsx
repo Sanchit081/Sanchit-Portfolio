@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Float, Html, RoundedBox } from "@react-three/drei";
+import { Html, RoundedBox } from "@react-three/drei";
 import { MathUtils, type Group, type Mesh } from "three";
 import * as THREE from "three";
 import type { AppId } from "@/types";
@@ -39,7 +39,6 @@ export function FloatingNode({
   const meshRef = useRef<Mesh>(null);
   const glowRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
-  const [magneticPosition, setMagneticPosition] = useState<[number, number, number]>(position);
   const color = NODE_COLORS[appId] ?? "#2563eb";
   const { mouse } = useThree();
 
@@ -54,41 +53,29 @@ export function FloatingNode({
   useFrame((state) => {
     if (!groupRef.current || !meshRef.current || !glowRef.current) return;
     const t = state.clock.elapsedTime;
-    
-    // Enhanced rotation animation
-    groupRef.current.rotation.y = Math.sin(t * 0.4 + index * 0.8) * 0.15;
-    groupRef.current.rotation.z = Math.sin(t * 0.25 + index * 0.5) * 0.08;
-    
-    // Floating animation with more variation
-    groupRef.current.position.y = position[1] + Math.sin(t * 1.1 + index * 0.7) * 0.03;
-    
-    // Magnetic effect on hover
-    if (hovered) {
-      const targetX = position[0] + mouse.x * 0.3;
-      const targetY = position[1] + mouse.y * 0.2;
-      setMagneticPosition([
-        MathUtils.damp(magneticPosition[0], targetX, 5, state.clock.getDelta()),
-        MathUtils.damp(magneticPosition[1], targetY, 5, state.clock.getDelta()),
-        position[2],
-      ]);
-    } else {
-      setMagneticPosition([
-        MathUtils.damp(magneticPosition[0], position[0], 3, state.clock.getDelta()),
-        MathUtils.damp(magneticPosition[1], position[1], 3, state.clock.getDelta()),
-        position[2],
-      ]);
-    }
-    
-    // Pulsing glow effect
-    const pulseIntensity = hovered ? 0.6 + Math.sin(t * 4) * 0.2 : 0.2 + Math.sin(t * 2) * 0.1;
-    if (glowRef.current.material && 'opacity' in glowRef.current.material) {
+    const delta = state.clock.getDelta();
+
+    groupRef.current.rotation.y = Math.sin(t * 0.16 + index * 0.6) * 0.04;
+    groupRef.current.rotation.z = Math.sin(t * 0.1 + index * 0.3) * 0.02;
+
+    const hoverOffsetX = hovered ? mouse.x * 0.04 : 0;
+    const hoverOffsetY = hovered ? mouse.y * 0.02 : 0;
+    const floatY = position[1] + Math.sin(t * 0.7 + index * 0.4) * 0.01 + hoverOffsetY;
+
+    groupRef.current.position.set(
+      MathUtils.damp(groupRef.current.position.x, position[0] + hoverOffsetX, 4, delta),
+      MathUtils.damp(groupRef.current.position.y, floatY, 4, delta),
+      position[2]
+    );
+
+    const pulseIntensity = hovered ? 0.08 : 0.04;
+    if (glowRef.current.material && "opacity" in glowRef.current.material) {
       (glowRef.current.material as any).opacity = pulseIntensity;
     }
-    
-    // Scale animation on hover
-    const targetScale = hovered ? 1.15 : 1;
-    meshRef.current.scale.x = MathUtils.damp(meshRef.current.scale.x, targetScale, 8, state.clock.getDelta());
-    meshRef.current.scale.y = MathUtils.damp(meshRef.current.scale.y, targetScale, 8, state.clock.getDelta());
+
+    const targetScale = hovered ? 1.02 : 1;
+    meshRef.current.scale.x = MathUtils.damp(meshRef.current.scale.x, targetScale, 6, delta);
+    meshRef.current.scale.y = MathUtils.damp(meshRef.current.scale.y, targetScale, 6, delta);
   });
 
   const handlePointerEnter = (event: { stopPropagation: () => void }) => {
@@ -107,19 +94,13 @@ export function FloatingNode({
   };
 
   return (
-    <Float
-      speed={0.8 + (index % 3) * 0.07}
-      rotationIntensity={0.15}
-      floatIntensity={0.5}
-      floatingRange={[-0.08, 0.08]}
+    <group
+      ref={groupRef}
+      position={position}
+      onPointerOver={handlePointerEnter}
+      onPointerOut={handlePointerLeave}
+      onClick={handleSelect}
     >
-      <group
-        ref={groupRef}
-        position={magneticPosition}
-        onPointerOver={handlePointerEnter}
-        onPointerOut={handlePointerLeave}
-        onClick={handleSelect}
-      >
         <mesh position={[0, 0, 0.01]} scale={[1.65, 1.65, 0.4]}>
           <boxGeometry args={[1, 1, 0.04]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
@@ -127,39 +108,30 @@ export function FloatingNode({
 
         <RoundedBox
           ref={meshRef}
-          args={[1.35, 1.35, 0.18]}
-          radius={0.12}
-          smoothness={4}
+          args={[1.25, 1.25, 0.12]}
+          radius={0.08}
+          smoothness={2}
         >
           <meshPhysicalMaterial
             color={color}
             transparent
-            opacity={hovered ? 0.98 : 0.88}
-            roughness={0.08}
-            metalness={0.45}
-            clearcoat={1}
-            clearcoatRoughness={0.05}
+            opacity={hovered ? 0.92 : 0.82}
+            roughness={0.18}
+            metalness={0.16}
+            clearcoat={0.6}
+            clearcoatRoughness={0.16}
             emissive={color}
-            emissiveIntensity={hovered ? 0.5 : 0.18}
+            emissiveIntensity={hovered ? 0.06 : 0.02}
           />
         </RoundedBox>
 
         <mesh ref={glowRef} position={[0, 0, 0.15]}>
-          <planeGeometry args={[1.5, 1.5]} />
+          <planeGeometry args={[1.2, 1.2]} />
           <meshBasicMaterial
             color={color}
             transparent
-            opacity={0.3}
+            opacity={0.04}
             blending={THREE.AdditiveBlending}
-          />
-        </mesh>
-
-        <mesh position={[0, 0, 0.12]}>
-          <planeGeometry args={[1.1, 1.1]} />
-          <meshBasicMaterial
-            color="#ffffff"
-            transparent
-            opacity={0.22}
           />
         </mesh>
 
@@ -170,17 +142,16 @@ export function FloatingNode({
           style={{ pointerEvents: "none", userSelect: "none" }}
         >
           <div
-            className="whitespace-nowrap rounded-full border border-white/70 bg-white/95 px-4 py-1.5 text-xs font-bold shadow-xl backdrop-blur-md transition-all duration-300"
+            className="whitespace-nowrap rounded-full border border-slate-700/60 bg-slate-950/70 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.24em] text-slate-200 shadow-sm backdrop-blur-sm transition-all duration-300"
             style={{ 
               color,
-              transform: hovered ? 'scale(1.1)' : 'scale(1)',
-              boxShadow: hovered ? `0 0 20px ${color}80` : '0 4px 6px rgba(0,0,0,0.1)'
+              transform: hovered ? 'scale(1.01)' : 'scale(1)',
+              boxShadow: hovered ? `0 4px 10px ${color}16` : '0 2px 6px rgba(0,0,0,0.12)'
             }}
           >
             {label}
           </div>
         </Html>
       </group>
-    </Float>
   );
 }

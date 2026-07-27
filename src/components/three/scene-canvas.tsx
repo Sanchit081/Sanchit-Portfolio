@@ -31,6 +31,7 @@ function clamp(value: number, min: number, max: number) {
 export function SceneCanvas({ onOpenApp, className }: SceneCanvasProps) {
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
   const [motionEnabled, setMotionEnabled] = useState(false);
+  const [motionReady, setMotionReady] = useState(false);
 
   const updateInput = useCallback((x: number, y: number) => {
     setMouse({
@@ -39,12 +40,15 @@ export function SceneCanvas({ onOpenApp, className }: SceneCanvasProps) {
     });
   }, []);
 
-  const handlePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    const y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
-    updateInput(x, y);
-  }, [updateInput]);
+  const handlePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+      updateInput(x * 0.7, y * 0.7);
+    },
+    [updateInput]
+  );
 
   const enableMotion = useCallback(async () => {
     if (typeof window === "undefined") return;
@@ -67,6 +71,7 @@ export function SceneCanvas({ onOpenApp, className }: SceneCanvasProps) {
     }
 
     setMotionEnabled(true);
+    setMotionReady(true);
   }, []);
 
   useEffect(() => {
@@ -75,7 +80,7 @@ export function SceneCanvas({ onOpenApp, className }: SceneCanvasProps) {
     const handleOrientation = (event: DeviceOrientationEvent) => {
       const tiltX = clamp((event.gamma ?? 0) / 45, -1, 1);
       const tiltY = clamp((event.beta ?? 0) / 45, -1, 1);
-      updateInput(tiltX, -tiltY);
+      updateInput(tiltX * 0.5, -tiltY * 0.35);
     };
 
     window.addEventListener("deviceorientation", handleOrientation, true);
@@ -91,13 +96,21 @@ export function SceneCanvas({ onOpenApp, className }: SceneCanvasProps) {
       onPointerMove={handlePointerMove}
       onPointerDown={enableMotion}
       onTouchStart={enableMotion}
+      onTouchMove={(event) => {
+        if (!event.touches?.length) return;
+        const touch = event.touches[0];
+        const rect = event.currentTarget.getBoundingClientRect();
+        const x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+        const y = -(((touch.clientY - rect.top) / rect.height) * 2 - 1);
+        updateInput(x * 0.65, y * 0.65);
+      }}
       aria-hidden
       style={{ touchAction: "none" }}
     >
       <Canvas
-        camera={{ position: [0, 1.8, 6.5], fov: 45 }}
-        dpr={[1, 2]}
-        gl={{ antialias: true, alpha: true }}
+        camera={{ position: [8, 6, 16], fov: 45 }}
+        dpr={typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 1.5) : 1}
+        gl={{ antialias: false, alpha: true, powerPreference: "low-power" }}
         style={{ background: "transparent" }}
       >
         <Suspense fallback={<SceneLoader />}>

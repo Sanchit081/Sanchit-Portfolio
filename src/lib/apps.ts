@@ -107,28 +107,12 @@ export const apps: AppDefinition[] = [
     defaultHeight: 450,
   },
   {
-    id: "gallery",
-    name: "Gallery",
-    icon: "Images",
-    description: "Visual showcase",
-    defaultWidth: 800,
-    defaultHeight: 550,
-  },
-  {
     id: "github",
     name: "GitHub",
     icon: "Github",
     description: "Open source",
     defaultWidth: 750,
     defaultHeight: 600,
-  },
-  {
-    id: "music",
-    name: "Music",
-    icon: "Music",
-    description: "Ambient player",
-    defaultWidth: 400,
-    defaultHeight: 350,
   },
 ];
 
