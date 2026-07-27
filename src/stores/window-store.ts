@@ -17,7 +17,7 @@ interface WindowStore {
   getWindowByAppId: (appId: AppId) => WindowState | undefined;
 }
 
-const CASCADE_OFFSET = 30;
+const CASCADE_OFFSET = 24;
 const VIEWPORT_PADDING = 16;
 const DESKTOP_TOP_OFFSET = 96;
 const DESKTOP_BOTTOM_OFFSET = 132;
@@ -60,10 +60,11 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     const id = generateId();
     const zIndex = get().nextZIndex;
     const viewport = getViewportBounds();
+    const isMobile = viewport.width < 768;
     const maxWidth = Math.max(320, viewport.width - VIEWPORT_PADDING * 2);
     const maxHeight = Math.max(
       260,
-      viewport.height - DESKTOP_TOP_OFFSET - DESKTOP_BOTTOM_OFFSET
+      viewport.height - (isMobile ? 96 : DESKTOP_TOP_OFFSET) - (isMobile ? 32 : DESKTOP_BOTTOM_OFFSET)
     );
     const width = Math.min(app.defaultWidth, maxWidth);
     const height = Math.min(app.defaultHeight, maxHeight);
@@ -71,10 +72,12 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       VIEWPORT_PADDING,
       Math.round((viewport.width - width) / 2)
     );
-    const centeredY = Math.max(
-      DESKTOP_TOP_OFFSET,
-      Math.round((viewport.height - height - DESKTOP_BOTTOM_OFFSET) / 2)
-    );
+    const centeredY = isMobile
+      ? Math.max(VIEWPORT_PADDING + 8, Math.round(viewport.height * 0.12))
+      : Math.max(
+          DESKTOP_TOP_OFFSET,
+          Math.round((viewport.height - height - DESKTOP_BOTTOM_OFFSET) / 2)
+        );
     const cascadeX = (openCount % 5) * CASCADE_OFFSET;
     const cascadeY = (openCount % 4) * CASCADE_OFFSET;
 
@@ -82,14 +85,18 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
       id,
       appId,
       title: app.name,
-      x: Math.min(
-        centeredX + cascadeX,
-        viewport.width - width - VIEWPORT_PADDING
-      ),
-      y: Math.min(
-        centeredY + cascadeY,
-        viewport.height - height - DESKTOP_BOTTOM_OFFSET
-      ),
+      x: isMobile
+        ? centeredX
+        : Math.min(
+            centeredX + cascadeX,
+            viewport.width - width - VIEWPORT_PADDING
+          ),
+      y: isMobile
+        ? Math.min(centeredY + (openCount % 2 === 0 ? 12 : -6), viewport.height - height - 24)
+        : Math.min(
+            centeredY + cascadeY,
+            viewport.height - height - DESKTOP_BOTTOM_OFFSET
+          ),
       width,
       height,
       zIndex,

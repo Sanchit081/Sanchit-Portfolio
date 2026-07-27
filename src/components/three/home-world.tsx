@@ -31,15 +31,19 @@ interface HomeWorldProps {
 
 function CoreSphere() {
   const meshRef = useRef<Mesh>(null);
+  const glowRef = useRef<Mesh>(null);
 
   useFrame((state) => {
-    if (!meshRef.current) return;
-    meshRef.current.rotation.x = state.clock.elapsedTime * 0.12;
-    meshRef.current.rotation.y = state.clock.elapsedTime * 0.18;
+    if (!meshRef.current || !glowRef.current) return;
+    const t = state.clock.elapsedTime;
+    meshRef.current.rotation.x = t * 0.08 + 0.2;
+    meshRef.current.rotation.y = t * 0.12 + 0.35;
+    glowRef.current.rotation.x = t * 0.04;
+    glowRef.current.rotation.y = -t * 0.06;
   });
 
   return (
-    <Float speed={1.2} rotationIntensity={0.4} floatIntensity={0.3}>
+    <Float speed={1.1} rotationIntensity={0.28} floatIntensity={0.24}>
       <mesh ref={meshRef}>
         <icosahedronGeometry args={[1.1, 2]} />
         <MeshDistortMaterial
@@ -54,24 +58,24 @@ function CoreSphere() {
           opacity={0.92}
         />
       </mesh>
-      <mesh>
+      <mesh ref={glowRef}>
         <torusGeometry args={[1.55, 0.04, 16, 100]} />
         <meshStandardMaterial
           color="#0891b2"
           emissive="#0891b2"
-          emissiveIntensity={0.4}
+          emissiveIntensity={0.7}
           transparent
-          opacity={0.7}
+          opacity={0.8}
         />
       </mesh>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1.85, 0.025, 16, 100]} />
+        <torusGeometry args={[1.9, 0.028, 16, 100]} />
         <meshStandardMaterial
           color="#7c3aed"
           emissive="#7c3aed"
-          emissiveIntensity={0.3}
+          emissiveIntensity={0.42}
           transparent
-          opacity={0.55}
+          opacity={0.6}
         />
       </mesh>
     </Float>
@@ -81,20 +85,15 @@ function CoreSphere() {
 function CameraRig({ mouse }: { mouse: { x: number; y: number } }) {
   const { camera } = useThree();
 
-  useFrame((_, delta) => {
-    camera.position.x = MathUtils.damp(
-      camera.position.x,
-      mouse.x * 1.2,
-      2.6,
-      delta
-    );
-    camera.position.y = MathUtils.damp(
-      camera.position.y,
-      mouse.y * 0.6 + 1.8,
-      2.6,
-      delta
-    );
-    camera.lookAt(0, 0, 0);
+  useFrame((state, delta) => {
+    const targetX = mouse.x * 1.35;
+    const targetY = mouse.y * 0.7 + 1.9;
+    const parallax = Math.sin(state.clock.elapsedTime * 0.4) * 0.08;
+
+    camera.position.x = MathUtils.damp(camera.position.x, targetX + parallax, 2.6, delta);
+    camera.position.y = MathUtils.damp(camera.position.y, targetY + Math.sin(state.clock.elapsedTime * 0.25) * 0.04, 2.6, delta);
+    camera.position.z = MathUtils.damp(camera.position.z, 6.2 + Math.abs(mouse.x) * 0.15, 2.4, delta);
+    camera.lookAt(0, 0.18, 0);
   });
 
   return null;
@@ -128,7 +127,8 @@ export function HomeWorld({ onOpenApp, mouse }: HomeWorldProps) {
 
   useFrame((state) => {
     if (!nodesRef.current) return;
-    nodesRef.current.rotation.y = state.clock.elapsedTime * 0.03;
+    nodesRef.current.rotation.y = state.clock.elapsedTime * 0.025;
+    nodesRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.18) * 0.015;
   });
 
   return (
@@ -136,10 +136,11 @@ export function HomeWorld({ onOpenApp, mouse }: HomeWorldProps) {
       <color attach="background" args={["#eef2f7"]} />
       <fog attach="fog" args={["#eef2f7", 8, 22]} />
 
-      <ambientLight intensity={0.85} />
-      <directionalLight position={[5, 8, 5]} intensity={1.2} color="#ffffff" />
-      <directionalLight position={[-4, 3, -2]} intensity={0.5} color="#c4b5fd" />
-      <pointLight position={[0, 2, 0]} intensity={0.8} color="#2563eb" />
+      <ambientLight intensity={0.9} />
+      <directionalLight position={[5, 8, 5]} intensity={1.35} color="#ffffff" />
+      <directionalLight position={[-4, 3, -2]} intensity={0.65} color="#c4b5fd" />
+      <pointLight position={[0, 2, 0]} intensity={1.2} color="#2563eb" />
+      <pointLight position={[2.5, 1.5, 3]} intensity={0.7} color="#38bdf8" />
 
       <CameraRig mouse={mouse} />
 

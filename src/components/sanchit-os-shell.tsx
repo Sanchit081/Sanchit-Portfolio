@@ -599,10 +599,10 @@ function WindowFrame({ window: windowState }: { window: WindowState }) {
     <motion.div
       ref={frameRef}
       layout
-      initial={{ opacity: 0, scale: 0.94, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.96, y: 12 }}
-      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0, scale: 0.94, y: 26, rotateX: -6 }}
+      animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
+      exit={{ opacity: 0, scale: 0.96, y: 16, rotateX: -4 }}
+      transition={{ type: "spring", stiffness: 180, damping: 22, mass: 0.9 }}
       onMouseDown={() => focusWindow(windowState.id)}
       className="pointer-events-auto absolute overflow-hidden rounded-[28px] border border-panel-border bg-white/95 shadow-2xl shadow-slate-200/60 backdrop-blur-xl"
       style={{

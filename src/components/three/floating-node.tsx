@@ -39,8 +39,9 @@ export function FloatingNode({
   useFrame((state) => {
     if (!groupRef.current) return;
     const t = state.clock.elapsedTime;
-    groupRef.current.rotation.y = Math.sin(t * 0.28 + index * 0.8) * 0.12;
-    groupRef.current.rotation.z = Math.sin(t * 0.2 + index * 0.5) * 0.04;
+    groupRef.current.rotation.y = Math.sin(t * 0.3 + index * 0.8) * 0.13;
+    groupRef.current.rotation.z = Math.sin(t * 0.18 + index * 0.5) * 0.05;
+    groupRef.current.position.y = position[1] + Math.sin(t * 0.9 + index * 0.7) * 0.02;
   });
 
   const handlePointerEnter = (event: { stopPropagation: () => void }) => {
@@ -62,10 +63,10 @@ export function FloatingNode({
 
   return (
     <Float
-      speed={0.9 + (index % 3) * 0.08}
-      rotationIntensity={0.16}
-      floatIntensity={0.45}
-      floatingRange={[-0.06, 0.06]}
+      speed={0.8 + (index % 3) * 0.07}
+      rotationIntensity={0.12}
+      floatIntensity={0.4}
+      floatingRange={[-0.05, 0.05]}
     >
       <group
         ref={groupRef}
@@ -83,18 +84,18 @@ export function FloatingNode({
           args={[1.35, 1.35, 0.18]}
           radius={0.12}
           smoothness={4}
-          scale={hovered ? 1.12 : 1}
+          scale={hovered ? 1.13 : 1}
         >
           <meshPhysicalMaterial
             color={color}
             transparent
-            opacity={hovered ? 0.95 : 0.82}
-            roughness={0.15}
-            metalness={0.35}
+            opacity={hovered ? 0.96 : 0.84}
+            roughness={0.12}
+            metalness={0.38}
             clearcoat={1}
-            clearcoatRoughness={0.1}
+            clearcoatRoughness={0.08}
             emissive={color}
-            emissiveIntensity={hovered ? 0.35 : 0.12}
+            emissiveIntensity={hovered ? 0.4 : 0.14}
           />
         </RoundedBox>
 
