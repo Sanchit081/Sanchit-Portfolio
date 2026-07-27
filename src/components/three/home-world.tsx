@@ -9,7 +9,7 @@ import {
   Sparkles,
   Stars,
 } from "@react-three/drei";
-import type { Group, Mesh } from "three";
+import { MathUtils, type Group, type Mesh } from "three";
 import { FloatingNode } from "./floating-node";
 import type { AppId } from "@/types";
 
@@ -81,9 +81,19 @@ function CoreSphere() {
 function CameraRig({ mouse }: { mouse: { x: number; y: number } }) {
   const { camera } = useThree();
 
-  useFrame(() => {
-    camera.position.x += (mouse.x * 1.2 - camera.position.x) * 0.04;
-    camera.position.y += (mouse.y * 0.6 + 1.8 - camera.position.y) * 0.04;
+  useFrame((_, delta) => {
+    camera.position.x = MathUtils.damp(
+      camera.position.x,
+      mouse.x * 1.2,
+      2.6,
+      delta
+    );
+    camera.position.y = MathUtils.damp(
+      camera.position.y,
+      mouse.y * 0.6 + 1.8,
+      2.6,
+      delta
+    );
     camera.lookAt(0, 0, 0);
   });
 
@@ -96,9 +106,11 @@ export function HomeWorld({ onOpenApp, mouse }: HomeWorldProps) {
   const nodeElements = useMemo(
     () =>
       DESKTOP_APPS.map((app, index) => {
-        const x = Math.cos(app.angle) * app.radius;
-        const z = Math.sin(app.angle) * app.radius;
-        const y = Math.sin(index * 0.8) * 0.35;
+        const angle = app.angle + (index % 2 === 0 ? 0.16 : -0.16);
+        const radius = app.radius + (index % 2 === 0 ? 0.18 : -0.12);
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        const y = Math.sin(index * 0.85 + 0.4) * 0.48 + (index % 2 === 0 ? 0.16 : -0.14);
 
         return (
           <FloatingNode
@@ -116,7 +128,7 @@ export function HomeWorld({ onOpenApp, mouse }: HomeWorldProps) {
 
   useFrame((state) => {
     if (!nodesRef.current) return;
-    nodesRef.current.rotation.y = state.clock.elapsedTime * 0.05;
+    nodesRef.current.rotation.y = state.clock.elapsedTime * 0.03;
   });
 
   return (

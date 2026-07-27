@@ -38,35 +38,51 @@ export function FloatingNode({
 
   useFrame((state) => {
     if (!groupRef.current) return;
-    groupRef.current.rotation.y =
-      Math.sin(state.clock.elapsedTime * 0.4 + index) * 0.15;
+    const t = state.clock.elapsedTime;
+    groupRef.current.rotation.y = Math.sin(t * 0.28 + index * 0.8) * 0.12;
+    groupRef.current.rotation.z = Math.sin(t * 0.2 + index * 0.5) * 0.04;
   });
+
+  const handlePointerEnter = (event: { stopPropagation: () => void }) => {
+    event.stopPropagation();
+    setHovered(true);
+    document.body.style.cursor = "pointer";
+  };
+
+  const handlePointerLeave = (event: { stopPropagation: () => void }) => {
+    event.stopPropagation();
+    setHovered(false);
+    document.body.style.cursor = "auto";
+  };
+
+  const handleSelect = (event: { stopPropagation: () => void }) => {
+    event.stopPropagation();
+    onSelect(appId);
+  };
 
   return (
     <Float
-      speed={1.4}
-      rotationIntensity={0.25}
-      floatIntensity={0.6}
-      floatingRange={[-0.08, 0.08]}
+      speed={0.9 + (index % 3) * 0.08}
+      rotationIntensity={0.16}
+      floatIntensity={0.45}
+      floatingRange={[-0.06, 0.06]}
     >
-      <group ref={groupRef} position={position}>
+      <group
+        ref={groupRef}
+        position={position}
+        onPointerOver={handlePointerEnter}
+        onPointerOut={handlePointerLeave}
+        onClick={handleSelect}
+      >
+        <mesh position={[0, 0, 0.01]} scale={[1.65, 1.65, 0.4]}>
+          <boxGeometry args={[1, 1, 0.04]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        </mesh>
+
         <RoundedBox
           args={[1.35, 1.35, 0.18]}
           radius={0.12}
           smoothness={4}
-          onPointerOver={(event) => {
-            event.stopPropagation();
-            setHovered(true);
-            document.body.style.cursor = "pointer";
-          }}
-          onPointerOut={() => {
-            setHovered(false);
-            document.body.style.cursor = "auto";
-          }}
-          onClick={(event) => {
-            event.stopPropagation();
-            onSelect(appId);
-          }}
           scale={hovered ? 1.12 : 1}
         >
           <meshPhysicalMaterial
@@ -94,6 +110,7 @@ export function FloatingNode({
         <Html
           center
           distanceFactor={8}
+          position={[0, 0.95, 0.2]}
           style={{ pointerEvents: "none", userSelect: "none" }}
         >
           <div
